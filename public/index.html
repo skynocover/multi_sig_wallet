@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Static Template</title>
+
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script
+      src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+      type="application/javascript"
+    ></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+      const getAddress = async () => {
+        signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        window.address = address;
+
+        return address;
+      };
+
+      const getBalance = async (address, tokenId) => {
+        const balance = await signer.getBalance();
+        const convertToEth = 1e18;
+
+        // 另一種取得地址餘額方式
+        const balance1 = await window.provider.getBalance(window.address);
+        // 使用ethers內建的方式轉換單位
+        console.log(ethers.utils.formatEther(balance1));
+
+        return balance.toString() / convertToEth;
+      };
+
+      const readDataFromSmartContract = async () => {
+        const greet = await window.Contract.greet();
+        return greet;
+      };
+
+      const sendGreeting = async (input) => {
+        const signer = await provider.getSigner();
+        const tx = await window.Contract.connect(signer).setGreeting(input);
+        const response = await tx.wait();
+
+        console.log(response);
+      };
+
+      const getBlockEvent = async () => {
+        const block = await provider.getBlockNumber();
+        const transferEvents = await window.Contract.queryFilter("TestEvent", block - 10, block);
+        console.table(transferEvents);
+        return transferEvents;
+      };
+
+      const getBlockChainInfo = async () => {
+        const block = await provider.getBlockNumber();
+        const Info = await provider.getBlock(block);
+        console.log(Info);
+      };
+    </script>
+  </head>
+
+  <body>
+    <div class="py-64 container mx-auto px-6">
+      <div class=" ">
+        <h2 class="text-5xl text-green-600">Heading</h2>
+      </div>
+      <div class="bg-gray-200" x-data="{address:'',balance:0,greet:'',greeting:'',info:[]}">
+        <button
+          @click="address=await getAddress()"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          Get Address
+        </button>
+        <span x-text="address"></span>
+
+        <button
+          @click="balance=await getBalance()"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          Get Balance
+        </button>
+        <span x-text="balance"></span>
+
+        <button
+          @click="greet=await readDataFromSmartContract()"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          Greet
+        </button>
+        <span x-text="greet"></span>
+
+        <input
+          x-model="greeting"
+          type="text"
+          class="border p-2 w-full mb-2 mt-6"
+          placeholder="Input greeting..."
+        />
+        <button
+          @click="sendGreeting(greeting)"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          Greet
+        </button>
+
+        <br />
+        <button
+          @click="events = await getBlockEvent()"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          getBlockEvent
+        </button>
+        <span x-text="JSON.stringify(events)"></span>
+        <br />
+        <button
+          @click="await getBlockChainInfo()"
+          class="bg-blue-800 text-white px-4 py-2 rounded-lg mt-4"
+        >
+          getBlockChainInfo
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      // 要將連線的chain id 改成 31337
+
+      // 本地部署完之後要記得修改合約地址
+      const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+      window.onload = async () => {
+        if (window.ethereum) {
+          window.provider = new ethers.providers.Web3Provider(window.ethereum);
+          await window.ethereum.enable();
+
+          const response = await fetch("../artifacts/contracts/Greeter.sol/Greeter.json");
+
+          const { abi } = await response.json();
+
+          window.Contract = new ethers.Contract(contractAddress, abi, window.provider);
+
+          window.Contract.on("TestEvent", (from, inputData) => {
+            console.log({ from, inputData });
+          });
+
+          console.log("web3 loaded");
+        } else {
+          alert("No ETH browser extension detected.");
+        }
+      };
+    </script>
+  </body>
+</html>
