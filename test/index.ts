@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BytesLike, BigNumber } from "ethers";
 
 import { erc20EncodeApprove, erc20EncodeTransferFrom, erc20EncodeTransfer } from "./erc20";
 import { erc721EncodeTransfer } from "./erc721";
 import { erc1155EncodeTransfer, erc1155EncodeBatchTransfer } from "./erc1155";
-import { BytesLike, BigNumber } from "ethers";
 
 describe("multi sig wallet", () => {
   it("eth tx", async () => {
@@ -273,6 +273,7 @@ describe("multi sig wallet", () => {
     }
 
     {
+      // 查詢mapping
       const isConfirmed = await wallet.isConfirmed(index.toNumber() - 1, addr1.address);
       expect(isConfirmed).to.eq(true);
     }
